@@ -29,7 +29,7 @@ export default function CartPage() {
       })
 
       // Initialize Paystack
-      const PaystackPop = (await import('@paystack/inline-js')).default
+      const PaystackPop: any = (await import('@paystack/inline-js')).default
       const paystack = new PaystackPop()
       paystack.newTransaction({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
