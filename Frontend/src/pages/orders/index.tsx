@@ -29,16 +29,19 @@ export default function OrdersPage() {
     api.get('/orders/my').then((r) => r.data.orders)
   )
 
-  const confirmDelivery = useMutation(
-    (orderId: string) => api.patch(`/orders/${orderId}/confirm-delivery`),
-    {
-      onSuccess: () => {
-        toast.success('Delivery confirmed! Payment released to vendor.')
-        qc.invalidateQueries('my-orders')
-      },
-      onError: (err: any) => toast.error(err.response?.data?.message || 'Failed'),
-    }
-  )
+  const confirmDelivery = useMutation({
+  mutationFn: (orderId: string) =>
+    api.patch(`/orders/${orderId}/confirm-delivery`),
+
+  onSuccess: () => {
+    toast.success('Delivery confirmed! Payment released to vendor.')
+    qc.invalidateQueries({ queryKey: ['my-orders'] })
+  },
+
+  onError: (err: any) => {
+    toast.error(err.response?.data?.message || 'Failed')
+  },
+})
 
   return (
     <>
