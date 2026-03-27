@@ -28,29 +28,38 @@ export default function RFQDetailPage() {
     { enabled: !!id }
   )
 
-  const submitOffer = useMutation(
-    (offer: OfferForm) => api.post(`/rfq/${id}/offer`, offer),
-    {
-      onSuccess: () => {
-        toast.success('Offer submitted!')
-        qc.invalidateQueries(['rfq', id])
-        setShowOfferForm(false)
-        reset()
-      },
-      onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to submit offer'),
-    }
-  )
+const submitOffer = useMutation({
+  mutationFn: (offer: OfferForm) =>
+    api.post(`/rfq/${id}/offer`, offer),
 
-  const acceptOffer = useMutation(
-    (offerId: string) => api.patch(`/rfq/${id}/offer/${offerId}/accept`),
-    {
-      onSuccess: () => {
-        toast.success('Offer accepted!')
-        qc.invalidateQueries(['rfq', id])
-      },
-      onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to accept offer'),
-    }
-  )
+  onSuccess: () => {
+    toast.success('Offer submitted!')
+    qc.invalidateQueries({ queryKey: ['rfq', id] })
+    setShowOfferForm(false)
+    reset()
+  },
+
+  onError: (err: any) => {
+    toast.error(
+      err.response?.data?.message || 'Failed to submit offer'
+    )
+  },
+})
+ const acceptOffer = useMutation({
+  mutationFn: (offerId: string) =>
+    api.patch(`/rfq/${id}/offer/${offerId}/accept`),
+
+  onSuccess: () => {
+    toast.success('Offer accepted!')
+    qc.invalidateQueries({ queryKey: ['rfq', id] })
+  },
+
+  onError: (err: any) => {
+    toast.error(
+      err.response?.data?.message || 'Failed to accept offer'
+    )
+  },
+})
 
   if (isLoading) return <Layout><div className="max-w-3xl mx-auto px-6 py-20 space-y-4">
     {[200, 120, 160].map((h, i) => <div key={i} className="card animate-pulse" style={{ height: h }} />)}
