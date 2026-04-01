@@ -21,7 +21,7 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-brown-deep/98 to-transparent">
       <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="font-serif text-xl tracking-widest uppercase text-gold">
+        <Link href="/" className="gold">
           T<span className="text-cream font-light">he </span>
           A<span className="text-cream font-light">frican </span>
           S<span className="text-cream font-light">tore</span>
