@@ -1,41 +1,94 @@
 import Head from 'next/head'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useState, useEffect } from 'react'
 import Layout from '@/components/layout/Layout'
 import { useCartStore } from '@/store/cartStore'
 import { useAuthStore } from '@/store/authStore'
+import { withProtectedRoute } from '@/lib/protectedRoute'
 import { FiTrash2, FiArrowRight } from 'react-icons/fi'
 import api from '@/lib/api'
 import toast from 'react-hot-toast'
 
-export default function CartPage() {
+function CartPage() {
   const router = useRouter()
   const { items, removeItem, updateQty, clearCart, total } = useCartStore()
   const { user } = useAuthStore()
+  const [deliveryFee, setDeliveryFee] = useState(0)
+  const [platformFee, setPlatformFee] = useState(0)
+
+  // Calculate delivery fee based on buyer-vendor state proximity
+  useEffect(() => {
+    const calculateDeliveryFee = async () => {
+      if (!user || items.length === 0) return
+      
+      try {
+        // Get unique vendor IDs
+        const vendorIds = [...new Set(items.map(i => i.vendorId))]
+        
+        // Fetch vendor profiles to get states
+        let totalDeliveryFee = 0
+        for (const vendorId of vendorIds) {
+          const { data } = await api.get(`/vendor/${vendorId}`)
+          const vendorState = data.vendorProfile?.state
+          // Same state = ₦10,000, Different state = ₦20,000
+          const fee = vendorState === user.state ? 10000 : 20000
+          totalDeliveryFee += fee
+        }
+        
+        setDeliveryFee(totalDeliveryFee)
+        // Calculate platform fee with bulk pricing considered
+        const subtotalWithBulk = calculateSubtotalWithBulk()
+        setPlatformFee(Math.round(subtotalWithBulk * 0.05))
+      } catch (err) {
+        console.error('Failed to calculate delivery fee:', err)
+        // Default to ₦10,000 if unable to fetch
+        setDeliveryFee(10000)
+      }
+    }
+    
+    calculateDeliveryFee()
+  }, [items, user])
+
+  // Apply bulk discount: if quantity > 6 yards, use bulkPrice
+  const calculateSubtotalWithBulk = (): number => {
+    return items.reduce((sum, item) => {
+      const itemTotal = item.quantity > 6 && item.bulkPrice 
+        ? item.bulkPrice * item.quantity
+        : item.price * item.quantity
+      return sum + itemTotal
+    }, 0)
+  }
 
   const handleCheckout = async () => {
     if (!user) { router.push('/auth/login?redirect=/cart'); return }
     if (items.length === 0) return
 
     try {
-      // Create order and get Paystack payment URL
+      const subtotalWithBulk = calculateSubtotalWithBulk()
+      const totalAmount = subtotalWithBulk + platformFee + deliveryFee
+      
+      // Create order with correct totals
       const { data } = await api.post('/orders', {
         items: items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
-          price: i.price,
+          price: i.quantity > 6 && i.bulkPrice ? i.bulkPrice : i.price, // Use bulk price if applicable
         })),
-        totalAmount: total(),
+        deliveryAddress: {
+          state: user.state,
+          country: 'Nigeria',
+        },
       })
 
-      // Initialize Paystack
+      // Initialize Paystack with correct total
       // @ts-ignore
       const PaystackPop: any = (await import('@paystack/inline-js')).default
-     const paystack = new PaystackPop()
+      const paystack = new PaystackPop()
       paystack.newTransaction({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
         email: user.email,
-        amount: total() * 100, // Paystack uses kobo
+        amount: totalAmount * 100, // Paystack uses kobo
         reference: data.order.paymentReference,
         onSuccess: async (transaction: any) => {
           try {
@@ -104,21 +157,31 @@ export default function CartPage() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm text-[#A89060]">
                     <span>Subtotal ({items.length} items)</span>
-                    <span>₦{total().toLocaleString()}</span>
+                    <div className="text-right">
+                      <div className="text-cream">₦{calculateSubtotalWithBulk().toLocaleString()}</div>
+                      {items.some(i => i.quantity > 6 && i.bulkPrice) && (
+                        <span className="text-[10px] text-gold">✓ Bulk discount applied</span>
+                      )}
+                    </div>
                   </div>
+                  {items.some(i => i.quantity > 6 && i.bulkPrice) && (
+                    <div className="flex justify-between text-xs text-gold/70 bg-gold/10 px-2 py-1 rounded">
+                      <span>📦 6+ yards gets bulk pricing</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm text-[#A89060]">
-                    <span>Delivery</span>
-                    <span className="text-cream/50">Calculated at checkout</span>
+                    <span>Delivery Fee</span>
+                    <span className="text-cream">₦{deliveryFee.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm text-[#A89060]">
                     <span>Platform fee (5%)</span>
-                    <span>₦{Math.round(total() * 0.05).toLocaleString()}</span>
+                    <span>₦{platformFee.toLocaleString()}</span>
                   </div>
                 </div>
                 <div className="border-t border-gold/10 pt-4 mb-6">
                   <div className="flex justify-between">
                     <span className="text-sm text-cream">Total</span>
-                    <span className="font-serif text-xl text-gold">₦{Math.round(total() * 1.05).toLocaleString()}</span>
+                    <span className="font-serif text-xl text-gold">₦{(calculateSubtotalWithBulk() + platformFee + deliveryFee).toLocaleString()}</span>
                   </div>
                 </div>
                 <button onClick={handleCheckout} className="btn-primary w-full flex items-center justify-center gap-2">
@@ -133,3 +196,5 @@ export default function CartPage() {
     </>
   )
 }
+
+export default withProtectedRoute(CartPage, { requireRole: 'buyer' })

@@ -50,7 +50,7 @@ export default function EditProductPage() {
   // Fetch product data using react-query
   const { data: productData, isLoading: isLoadingProduct, error: productError } = useQuery<{ product: Product }>(
     ['product', productId],
-    () => api.get(`/products/${productId}`).then((r) => r.data),
+    () => api.get(`/vendor/products/${productId}`).then((r) => r.data),
     {
       enabled: !!productId && !!user,
       staleTime: Infinity,
@@ -96,7 +96,7 @@ export default function EditProductPage() {
 
   const onSubmit = async (formData: ProductFormData) => {
     try {
-      await api.patch(`/products/${productId}`, formData)
+      await api.patch(`/vendor/products/${productId}`, formData)
       toast.success('Product updated successfully!')
       router.push('/vendor/products')
     } catch (err: any) {
@@ -122,6 +122,7 @@ export default function EditProductPage() {
   }
 
   if (productError || !productData?.product) {
+    const errorMessage = (productError as any)?.response?.data?.message || 'Failed to load product'
     return (
       <>
         <Head>
@@ -129,7 +130,8 @@ export default function EditProductPage() {
         </Head>
         <Layout>
           <div className="max-w-2xl mx-auto px-6 py-12 text-center">
-            <p className="text-red-400 mb-4">Failed to load product</p>
+            <p className="text-red-400 mb-2">Failed to load product</p>
+            <p className="text-red-300 text-sm mb-4">{errorMessage}</p>
             <Link href="/vendor/products" className="btn-primary">
               Back to Products
             </Link>

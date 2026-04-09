@@ -1,11 +1,12 @@
 import Head from 'next/head'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Layout from '@/components/layout/Layout'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import toast from 'react-hot-toast'
-import { FiCheck, FiX, FiLoader, FiMail, FiPhone, FiMapPin } from 'react-icons/fi'
+import { FiCheck, FiX, FiLoader, FiMail, FiPhone, FiMapPin, FiArrowRight } from 'react-icons/fi'
 
 interface Vendor {
   _id: string
@@ -171,6 +172,35 @@ export default function AdminPage() {
                   <div className="font-serif text-3xl text-gold font-light">{stat.value}</div>
                 </div>
               ))}
+
+              {/* Management Pages */}
+              <div className="col-span-full mt-8 pt-8 border-t border-gold/20">
+                <h3 className="text-sm text-[#A89060] uppercase tracking-wide font-medium mb-4">Management</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Link href="/admin/orders">
+                    <div className="card p-6 hover:border-gold/40 transition-all cursor-pointer group">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-cream font-medium group-hover:text-gold transition-colors">Manage Orders</p>
+                          <p className="text-xs text-[#A89060] mt-1">Update delivery status</p>
+                        </div>
+                        <FiArrowRight className="text-gold group-hover:translate-x-1 transition-transform" size={20} />
+                      </div>
+                    </div>
+                  </Link>
+                  <Link href="/admin/vendors">
+                    <div className="card p-6 hover:border-gold/40 transition-all cursor-pointer group">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-cream font-medium group-hover:text-gold transition-colors">Manage Vendors</p>
+                          <p className="text-xs text-[#A89060] mt-1">Suspend or delete vendors</p>
+                        </div>
+                        <FiArrowRight className="text-gold group-hover:translate-x-1 transition-transform" size={20} />
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </div>
             </div>
           )}
 

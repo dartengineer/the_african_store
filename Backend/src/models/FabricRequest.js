@@ -9,7 +9,8 @@ const fabricRequestSchema = new mongoose.Schema({
     max: { type: Number, required: true },
   },
   state:  { type: String, required: true },
-  status: { type: String, enum: ['open', 'closed'], default: 'open' },
+  status: { type: String, enum: ['OPEN', 'CLOSED'], default: 'OPEN' },
+  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'VendorProfile' }, // vendor who closed it
   vendorOffers: [{
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'VendorProfile' },
     price:    { type: Number, required: true },

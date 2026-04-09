@@ -28,6 +28,7 @@ export default function ProductDetail() {
       productId: data._id,
       name: data.name,
       price: data.price,
+      bulkPrice: data.bulkPrice,
       quantity: qty,
       image: data.images[0] || '',
       vendorId: data.vendorId._id,

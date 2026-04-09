@@ -1,11 +1,36 @@
 import Head from 'next/head'
 import Link from 'next/link'
 import { useQuery } from 'react-query'
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
 import Layout from '@/components/layout/Layout'
 import ProductCard from '@/components/shop/ProductCard'
+import { useAuthStore } from '@/store/authStore'
 import api from '@/lib/api'
 
 export default function Home() {
+  const router = useRouter()
+  const { user, isInitialized } = useAuthStore()
+
+  // Redirect authenticated users to their role-specific home
+  useEffect(() => {
+    if (!isInitialized) return
+
+    if (user) {
+      switch (user.role) {
+        case 'buyer':
+          router.replace('/buyer/home')
+          return
+        case 'vendor':
+          router.replace('/vendor/dashboard')
+          return
+        case 'admin':
+          router.replace('/admin')
+          return
+      }
+    }
+  }, [user, isInitialized, router])
+
   const { data: featured } = useQuery('featured-products', () =>
     api.get('/products?featured=true&limit=8').then((r) => r.data.products)
   )

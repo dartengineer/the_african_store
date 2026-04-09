@@ -11,6 +11,18 @@ const signToken = (id) =>
 
 const sendToken = (user, statusCode, res) => {
   const token = signToken(user._id)
+  
+  // Set HTTP-only secure cookie (for production with HTTPS)
+  const isProduction = process.env.NODE_ENV === 'production'
+  res.cookie('tas_token', token, {
+    httpOnly: true,              // Prevent XSS attacks
+    secure: isProduction,        // Only send over HTTPS in production
+    sameSite: isProduction ? 'Lax' : 'Lax',  // Cross-site cookie policy
+    maxAge: (process.env.JWT_EXPIRE === '30m' ? 30 * 60 : 60 * 60) * 1000, // Match JWT expiry
+    path: '/',
+  })
+  
+  // Also send token in response for localStorage fallback
   res.status(statusCode).json({ token, user })
 }
 
@@ -64,6 +76,17 @@ router.post('/login', [
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: 'Invalid email or password' })
     }
+
+    // Check if vendor is suspended
+    if (user.role === 'vendor') {
+      const vendorProfile = await VendorProfile.findOne({ userId: user._id })
+      if (vendorProfile && vendorProfile.isSuspended) {
+        return res.status(403).json({ 
+          message: `Your vendor account has been suspended. Reason: ${vendorProfile.suspensionReason || 'Contact admin for more details'}` 
+        })
+      }
+    }
+
     sendToken(user, 200, res)
   } catch (err) {
     res.status(500).json({ message: err.message })

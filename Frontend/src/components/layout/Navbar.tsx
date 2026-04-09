@@ -35,16 +35,31 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <ul className="hidden md:flex gap-8 list-none">
+          {mounted && user?.role === 'vendor' && (
+            <li>
+              <Link
+                href="/vendor/products"
+                className={`text-xs tracking-widest uppercase font-light transition-colors duration-300 ${
+                  router.pathname.startsWith('/vendor/products')
+                    ? 'text-gold'
+                    : 'text-cream/70 hover:text-gold'
+                }`}
+              >
+                📦 Products
+              </Link>
+            </li>
+          )}
           {[
             { label: 'Shop', href: '/shop' },
             { label: 'Request Fabric', href: '/rfq' },
-            { label: 'Vendors', href: '/vendors' },
+            // Only show "Vendors" for non-vendor users
+            ...(mounted && user?.role !== 'vendor' ? [{ label: 'Vendors', href: '/vendors' }] : []),
           ].map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
                 className={`text-xs tracking-widest uppercase font-light transition-colors duration-300 ${
-                  router.pathname.startsWith(item.href)
+                  mounted && router.pathname.startsWith(item.href)
                     ? 'text-gold'
                     : 'text-cream/70 hover:text-gold'
                 }`}
@@ -60,7 +75,7 @@ export default function Navbar() {
           {/* Cart */}
           <Link href="/cart" className="relative text-cream/70 hover:text-gold transition-colors">
             <FiShoppingBag size={18} />
-            {count > 0 && (
+            {mounted && count > 0 && (
               <span className="absolute -top-2 -right-2 bg-gold text-brown-deep text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium">
                 {count}
               </span>
@@ -88,6 +103,15 @@ export default function Navbar() {
                       Vendor Dashboard
                     </Link>
                   )}
+                  {user.role === 'vendor' && (
+                    <Link
+                      href="/vendor/orders"
+                      className="block px-4 py-3 text-xs tracking-wide text-cream/80 hover:text-gold hover:bg-brown-warm transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                  )}
                   {user.role === 'admin' && (
                     <Link
                       href="/admin"
@@ -97,13 +121,15 @@ export default function Navbar() {
                       Admin Panel
                     </Link>
                   )}
-                  <Link
-                    href="/orders"
-                    className="block px-4 py-3 text-xs tracking-wide text-cream/80 hover:text-gold hover:bg-brown-warm transition-colors"
-                    onClick={() => setUserMenuOpen(false)}
-                  >
-                    My Orders
-                  </Link>
+                  {user.role === 'buyer' && (
+                    <Link
+                      href="/orders"
+                      className="block px-4 py-3 text-xs tracking-wide text-cream/80 hover:text-gold hover:bg-brown-warm transition-colors"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     className="block px-4 py-3 text-xs tracking-wide text-cream/80 hover:text-gold hover:bg-brown-warm transition-colors"
@@ -147,7 +173,8 @@ export default function Navbar() {
           {[
             { label: 'Shop', href: '/shop' },
             { label: 'Request Fabric', href: '/rfq' },
-            { label: 'Vendors', href: '/vendors' },
+            // Only show "Vendors" for non-vendor users
+            ...(mounted && user?.role !== 'vendor' ? [{ label: 'Vendors', href: '/vendors' }] : []),
           ].map((item) => (
             <Link
               key={item.href}
@@ -158,7 +185,7 @@ export default function Navbar() {
               {item.label}
             </Link>
           ))}
-          {!user && (
+          {mounted && !user && (
             <>
               <Link href="/auth/login" className="text-sm text-cream/70 hover:text-gold" onClick={() => setMenuOpen(false)}>Sign In</Link>
               <Link href="/auth/register" className="btn-primary text-center !py-2" onClick={() => setMenuOpen(false)}>Get Started</Link>

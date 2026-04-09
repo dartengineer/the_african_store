@@ -30,6 +30,7 @@ export default function ProductCard({ product }: Props) {
       productId: product._id,
       name: product.name,
       price: product.price,
+      bulkPrice: product.bulkPrice,
       quantity: 1,
       image: product.images[0] || '',
       vendorId: product.vendorId._id,

@@ -9,6 +9,8 @@ const vendorProfileSchema = new mongoose.Schema({
   rating:           { type: Number, default: 0, min: 0, max: 5 },
   totalReviews:     { type: Number, default: 0 },
   isApproved:       { type: Boolean, default: false },
+  isSuspended:      { type: Boolean, default: false },
+  suspensionReason: { type: String }, // Optional reason for suspension
   commissionRate:   { type: Number, default: 7 }, // percent
   bankDetails: {
     bankName:      String,

@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const cookieParser = require('cookie-parser')
 const rateLimit = require('express-rate-limit')
 const connectDB = require('./config/db')
 
@@ -13,9 +14,11 @@ connectDB()
 
 // Security middleware
 app.use(helmet())
+
+// CORS configuration - use environment variables for flexibility
 const allowedOrigins = [
-  'http://localhost:3000', 
-  'https://the-african-store.vercel.app'
+  'http://localhost:3000',
+  process.env.FRONTEND_URL || 'https://the-african-store.vercel.app'
 ]
 
 app.use(cors({
@@ -23,12 +26,16 @@ app.use(cors({
     // allow requests with no origin like mobile apps, curl
     if(!origin) return callback(null, true)
     if(allowedOrigins.indexOf(origin) === -1){
+      console.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`)
       const msg = `The CORS policy for this site does not allow access from the specified Origin.`
       return callback(new Error(msg), false)
     }
     return callback(null, true)
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400, // 24 hours
 }))
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
@@ -43,6 +50,7 @@ app.use('/api/', limiter)
 // Body parsers
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser()) // Parse cookies from requests
 
 // Routes
 app.use('/api/auth',     require('./routes/auth'))

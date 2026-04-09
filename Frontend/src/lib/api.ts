@@ -4,9 +4,10 @@ import Cookies from 'js-cookie'
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // CRITICAL: Allow cookies to be sent/received for cross-origin requests
 })
 
-// Attach JWT token to every request
+// Attach JWT token to every request (for Authorization header)
 api.interceptors.request.use((config) => {
   const token = Cookies.get('tas_token')
   if (token) config.headers.Authorization = `Bearer ${token}`

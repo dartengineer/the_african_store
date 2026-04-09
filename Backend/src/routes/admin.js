@@ -119,12 +119,44 @@ router.get('/orders', async (req, res) => {
     const skip = (Number(page) - 1) * Number(limit)
     const total = await Order.countDocuments(query)
     const orders = await Order.find(query)
-      .populate('buyerId', 'name email phone')
+      .populate('buyerId', 'name email phone state')
       .populate('items.productId', 'name price')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
     res.json({ orders, total, totalPages: Math.ceil(total / Number(limit)) })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// PATCH /api/admin/orders/:id/status  — update order delivery status
+router.patch('/orders/:id/status', async (req, res) => {
+  try {
+    const { deliveryStatus } = req.body
+    if (!['processing', 'shipped', 'delivered'].includes(deliveryStatus)) {
+      return res.status(400).json({ message: 'Invalid delivery status' })
+    }
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { deliveryStatus },
+      { new: true }
+    ).populate('buyerId', 'name email').populate('items.productId', 'name price')
+    
+    if (!order) return res.status(404).json({ message: 'Order not found' })
+    res.json({ order, message: `Order status updated to ${deliveryStatus}` })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
+// GET /api/admin/vendors/all  — all vendors
+router.get('/vendors/all', async (req, res) => {
+  try {
+    const vendors = await VendorProfile.find()
+      .populate('userId', 'name email phone')
+      .sort({ createdAt: -1 })
+    res.json({ vendors })
   } catch (err) {
     res.status(500).json({ message: err.message })
   }

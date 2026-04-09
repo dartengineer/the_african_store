@@ -12,14 +12,11 @@ const queryClient = new QueryClient({
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
-  const fetchMe = useAuthStore((s) => s.fetchMe)
+  const initializeAuth = useAuthStore((s) => s.initializeAuth)
 
   useEffect(() => {
-    // Skip fetchMe on auth pages to prevent redirect loop
-    if (!router.pathname.startsWith('/auth/')) {
-      fetchMe()
-    }
-  }, [router.pathname, fetchMe])
+    initializeAuth()
+  }, [])  // Empty dependency array - only run once on mount
 
   return (
     <QueryClientProvider client={queryClient}>

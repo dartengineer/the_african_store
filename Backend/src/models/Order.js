@@ -8,7 +8,10 @@ const orderSchema = new mongoose.Schema({
     quantity:  { type: Number, required: true },
     price:     { type: Number, required: true },
   }],
-  totalAmount:      { type: Number, required: true },
+  subtotal:         { type: Number, required: true }, // items total
+  platformFee:      { type: Number, default: 0 }, // 5% of subtotal
+  deliveryFee:      { type: Number, default: 0 }, // based on distance
+  totalAmount:      { type: Number, required: true }, // subtotal + platform fee + delivery
   paymentStatus:    { type: String, enum: ['pending', 'paid', 'refunded'], default: 'pending' },
   paymentReference: { type: String, default: () => `TAS-${uuidv4().slice(0, 8).toUpperCase()}` },
   deliveryStatus:   { type: String, enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'], default: 'pending' },

@@ -21,6 +21,7 @@ export default function Footer() {
               {
                 title: 'Shop',
                 links: [
+                  { label: 'Browse Fabrics', href: '/shop' },
                   { label: 'Ankara', href: '/shop?category=ankara' },
                   { label: 'Lace', href: '/shop?category=lace' },
                   { label: 'Senator', href: '/shop?category=senator' },
@@ -28,19 +29,27 @@ export default function Footer() {
                 ],
               },
               {
-                title: 'Vendors',
+                title: 'Marketplace',
                 links: [
-                  { label: 'Join as Vendor', href: '/auth/register?role=vendor' },
-                  { label: 'Vendor Dashboard', href: '/vendor/dashboard' },
+                  { label: 'Request Fabric', href: '/rfq' },
                   { label: 'Browse Vendors', href: '/vendors' },
+                  { label: 'Become a Vendor', href: '/auth/register?role=vendor' },
                 ],
               },
               {
                 title: 'Company',
                 links: [
-                  { label: 'About TAS', href: '/about' },
-                  { label: 'Trust & Safety', href: '/trust' },
-                  { label: 'Contact', href: '/contact' },
+                  { label: 'About Us', href: '/about' },
+                  { label: 'Company Info', href: '/company' },
+                  { label: 'Contact Us', href: '/contact' },
+                ],
+              },
+              {
+                title: 'Support',
+                links: [
+                  { label: 'My Orders', href: '/orders' },
+                  { label: 'My Profile', href: '/profile' },
+                  { label: 'Help Center', href: '/help' },
                 ],
               },
             ].map((col) => (

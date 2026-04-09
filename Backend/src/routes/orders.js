@@ -3,6 +3,8 @@ const router = express.Router()
 const axios = require('axios')
 const Order = require('../models/Order')
 const Product = require('../models/Product')
+const User = require('../models/User')
+const VendorProfile = require('../models/VendorProfile')
 const { protect, authorize } = require('../middleware/auth')
 
 // POST /api/orders  — buyer creates order
@@ -11,7 +13,7 @@ router.post('/', protect, authorize('buyer'), async (req, res) => {
     const { items, deliveryAddress } = req.body
 
     // Validate products and compute real prices
-    let totalAmount = 0
+    let subtotal = 0
     const validatedItems = []
 
     for (const item of items) {
@@ -23,16 +25,47 @@ router.post('/', protect, authorize('buyer'), async (req, res) => {
         return res.status(400).json({ message: `Insufficient stock for ${product.name}` })
       }
       validatedItems.push({ productId: product._id, quantity: item.quantity, price: product.price })
-      totalAmount += product.price * item.quantity
+      subtotal += product.price * item.quantity
     }
 
-    // Add 5% platform fee
-    const finalAmount = Math.round(totalAmount * 1.05)
+    // Calculate fees
+    const platformFee = Math.round(subtotal * 0.05) // 5% platform commission
+    
+    // Calculate delivery fee based on buyer-vendor state proximity
+    const buyer = await User.findById(req.user._id)
+    const buyerState = buyer.state
+    
+    // Get unique vendors from items and calculate delivery fee per vendor
+    let totalDeliveryFee = 0
+    const vendorIds = [...new Set(validatedItems.map(item => {
+      const product = validatedItems.find(vi => vi.productId.toString() === item.productId.toString())
+      return product?.vendorId
+    }))]
+    
+    // For each unique vendor, calculate delivery cost (simplified: use first vendor for single-vendor orders)
+    for (const item of validatedItems) {
+      const product = await Product.findById(item.productId)
+      const vendor = await VendorProfile.findById(product.vendorId)
+      const vendorState = vendor?.state
+      
+      // Same state = ₦10,000, Different state = ₦20,000
+      const fee = (buyerState === vendorState) ? 10000 : 20000
+      
+      // Only add fee once per product (not per quantity)
+      if (!totalDeliveryFee || totalDeliveryFee === 0) {
+        totalDeliveryFee = fee
+      }
+    }
+    
+    const totalAmount = subtotal + platformFee + totalDeliveryFee
 
     const order = await Order.create({
       buyerId: req.user._id,
       items: validatedItems,
-      totalAmount: finalAmount,
+      subtotal,
+      platformFee,
+      deliveryFee: totalDeliveryFee,
+      totalAmount,
       deliveryAddress,
     })
 
@@ -77,7 +110,7 @@ router.post('/:id/verify-payment', protect, async (req, res) => {
 
     // Verify amount matches (Paystack returns kobo)
     const paidAmount = paystackData.data.amount / 100
-    if (Math.abs(paidAmount - order.totalAmount) > 1) { // Allow 1 naira tolerance
+    if (Math.abs(paidAmount - order.totalAmount) > 2) { // Allow 2 naira tolerance for rounding
       return res.status(400).json({ 
         message: `Payment amount mismatch. Expected ₦${order.totalAmount}, got ₦${paidAmount}` 
       })
@@ -136,11 +169,50 @@ router.get('/my', protect, async (req, res) => {
   }
 })
 
+// GET /api/orders/vendor/my  — vendor's orders (orders containing their products)
+router.get('/vendor/my', protect, authorize('vendor'), async (req, res) => {
+  try {
+    // Get the vendor profile for this user
+    const vendorProfile = await VendorProfile.findOne({ userId: req.user._id })
+    if (!vendorProfile) {
+      return res.status(404).json({ message: 'Vendor profile not found' })
+    }
+
+    // Get all products belonging to this vendor
+    const vendorProducts = await Product.find({ vendorId: vendorProfile._id }).select('_id')
+    const productIds = vendorProducts.map(p => p._id)
+
+    if (productIds.length === 0) {
+      return res.json({ orders: [] })
+    }
+
+    // Find orders that contain any of these products
+    const orders = await Order.find({
+      'items.productId': { $in: productIds }
+    })
+      .populate('buyerId', 'name email phone state')
+      .populate('items.productId', 'name images price')
+      .sort({ createdAt: -1 })
+
+    // Filter items to only show vendor's products
+    const vendorOrders = orders.map(order => ({
+      ...order.toObject(),
+      items: order.items.filter(item => 
+        productIds.some(id => id.toString() === item.productId._id.toString())
+      )
+    }))
+
+    res.json({ orders: vendorOrders })
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+})
+
 // GET /api/orders/:id  — single order
 router.get('/:id', protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('buyerId', 'name email phone')
+      .populate('buyerId', 'name email phone state')
       .populate('items.productId', 'name images price vendorId')
     if (!order) return res.status(404).json({ message: 'Order not found' })
 
