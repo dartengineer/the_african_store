@@ -10,14 +10,11 @@ interface ProtectedRouteProps {
   redirectTo?: string
 }
 
-/**
- * Higher-order component to protect routes based on user role
- */
-export function withProtectedRoute(
-  Component: React.ComponentType<any>,
+export function withProtectedRoute<P>(
+  Component: React.ComponentType<P>,
   { allowedRoles, redirectTo = '/' }: ProtectedRouteProps
 ) {
-  return function ProtectedComponent(props: any): JSX.Element | null {
+  const ProtectedComponent = (props: P): JSX.Element | null => {
     const router = useRouter()
     const { user, isInitialized } = useAuthStore()
 
@@ -35,7 +32,7 @@ export function withProtectedRoute(
       }
     }, [user, isInitialized, router, allowedRoles, redirectTo])
 
-    // 🔹 Show loading ONLY while initializing
+    // ✅ Loading state
     if (!isInitialized) {
       return (
         <Layout>
@@ -46,48 +43,14 @@ export function withProtectedRoute(
       )
     }
 
-    // 🔹 While redirecting, render nothing
+    // ✅ Redirecting (no UI)
     if (!user || !allowedRoles.includes(user.role)) {
       return null
     }
 
-    // 🔹 Authorized
+    // ✅ Authorized
     return <Component {...props} />
   }
-}
 
-/**
- * Hook to check if user has access to specific roles
- */
-export function useRoleAccess(allowedRoles: UserRole[]): boolean {
-  const { user } = useAuthStore()
-  return user ? allowedRoles.includes(user.role) : false
-}
-
-/**
- * Hook to redirect user to their role-specific home page
- */
-export function useRoleBasedRedirect(): void {
-  const router = useRouter()
-  const { user, isInitialized } = useAuthStore()
-
-  useEffect(() => {
-    if (!isInitialized) return
-
-    if (router.pathname !== '/') return
-
-    if (user) {
-      switch (user.role) {
-        case 'buyer':
-          router.replace('/buyer/home')
-          break
-        case 'vendor':
-          router.replace('/vendor/dashboard')
-          break
-        case 'admin':
-          router.replace('/admin')
-          break
-      }
-    }
-  }, [user, isInitialized, router])
+  return ProtectedComponent
 }
