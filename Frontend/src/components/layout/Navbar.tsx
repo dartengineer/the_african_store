@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import { useCartStore } from '@/store/cartStore'
 import { FiShoppingBag, FiUser, FiMenu, FiX } from 'react-icons/fi'
@@ -11,6 +11,12 @@ export default function Navbar() {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  // Prevent hydration mismatch by only rendering user-specific content after mount
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -62,7 +68,7 @@ export default function Navbar() {
           </Link>
 
           {/* User menu */}
-          {user ? (
+          {mounted && user ? (
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
