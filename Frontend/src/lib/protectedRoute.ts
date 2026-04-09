@@ -12,13 +12,12 @@ interface ProtectedRouteProps {
 
 /**
  * Higher-order component to protect routes based on user role
- * Usage: export default withProtectedRoute(ComponentName, { allowedRoles: ['buyer'] })
  */
 export function withProtectedRoute(
   Component: React.ComponentType<any>,
   { allowedRoles, redirectTo = '/' }: ProtectedRouteProps
 ) {
-  return function ProtectedComponent(props: any): JSX.Element {
+  return function ProtectedComponent(props: any): JSX.Element | null {
     const router = useRouter()
     const { user, isInitialized } = useAuthStore()
 
@@ -26,35 +25,39 @@ export function withProtectedRoute(
       if (!isInitialized) return
 
       if (!user) {
-        router.push(`/auth/login?redirect=${router.pathname}`)
+        router.replace(`/auth/login?redirect=${router.pathname}`)
         return
       }
 
       if (!allowedRoles.includes(user.role)) {
-        router.push(redirectTo)
+        router.replace(redirectTo)
         return
       }
-    }, [user, isInitialized, router])
+    }, [user, isInitialized, router, allowedRoles, redirectTo])
 
-    if (!isInitialized || !user || !allowedRoles.includes(user.role)) {
+    // 🔹 Show loading ONLY while initializing
+    if (!isInitialized) {
       return (
         <Layout>
           <div className="min-h-screen flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-cream/50">Loading...</p>
-            </div>
+            <p className="text-cream/50">Loading...</p>
           </div>
         </Layout>
       )
     }
 
+    // 🔹 While redirecting, render nothing
+    if (!user || !allowedRoles.includes(user.role)) {
+      return null
+    }
+
+    // 🔹 Authorized
     return <Component {...props} />
   }
 }
 
 /**
  * Hook to check if user has access to specific roles
- * Usage: const canAccess = useRoleAccess(['buyer', 'vendor'])
  */
 export function useRoleAccess(allowedRoles: UserRole[]): boolean {
   const { user } = useAuthStore()
@@ -63,7 +66,6 @@ export function useRoleAccess(allowedRoles: UserRole[]): boolean {
 
 /**
  * Hook to redirect user to their role-specific home page
- * Usage: useRoleBasedRedirect() - automatically redirects on mount
  */
 export function useRoleBasedRedirect(): void {
   const router = useRouter()
@@ -72,19 +74,18 @@ export function useRoleBasedRedirect(): void {
   useEffect(() => {
     if (!isInitialized) return
 
-    // Only redirect on home page
     if (router.pathname !== '/') return
 
     if (user) {
       switch (user.role) {
         case 'buyer':
-          router.push('/buyer/home')
+          router.replace('/buyer/home')
           break
         case 'vendor':
-          router.push('/vendor/dashboard')
+          router.replace('/vendor/dashboard')
           break
         case 'admin':
-          router.push('/admin')
+          router.replace('/admin')
           break
       }
     }
