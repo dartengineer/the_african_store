@@ -18,7 +18,7 @@ export function withProtectedRoute(
   Component: React.ComponentType<any>,
   { allowedRoles, redirectTo = '/' }: ProtectedRouteProps
 ) {
-  return function ProtectedComponent(props: any) {
+  return function ProtectedComponent(props: any): JSX.Element {
     const router = useRouter()
     const { user, isInitialized } = useAuthStore()
 
@@ -65,7 +65,7 @@ export function useRoleAccess(allowedRoles: UserRole[]): boolean {
  * Hook to redirect user to their role-specific home page
  * Usage: useRoleBasedRedirect() - automatically redirects on mount
  */
-export function useRoleBasedRedirect() {
+export function useRoleBasedRedirect(): void {
   const router = useRouter()
   const { user, isInitialized } = useAuthStore()
 
