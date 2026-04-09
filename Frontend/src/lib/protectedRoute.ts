@@ -32,7 +32,7 @@ export function withProtectedRoute<P>(
       }
     }, [user, isInitialized, router, allowedRoles, redirectTo])
 
-    // ✅ Loading state
+    // 🔹 1. Still initializing
     if (!isInitialized) {
       return (
         <Layout>
@@ -43,12 +43,12 @@ export function withProtectedRoute<P>(
       )
     }
 
-    // ✅ Redirecting (no UI)
+    // 🔹 2. Not authorized (redirect happening)
     if (!user || !allowedRoles.includes(user.role)) {
       return null
     }
 
-    // ✅ Authorized
+    // 🔹 3. Authorized
     return <Component {...props} />
   }
 
