@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true })
         try {
           const { data } = await api.post('/auth/login', { email, password })
-          Cookies.set('tas_token', data.token, { expires: 7 })
+          Cookies.set('tas_token', data.token, { expires: 1/48 })
           set({ user: data.user, token: data.token, isLoading: false })
         } catch (err) {
           set({ isLoading: false })
@@ -55,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true })
         try {
           const { data } = await api.post('/auth/register', formData)
-          Cookies.set('tas_token', data.token, { expires: 7 })
+          Cookies.set('tas_token', data.token, { expires: 1/48 })
           set({ user: data.user, token: data.token, isLoading: false })
         } catch (err) {
           set({ isLoading: false })

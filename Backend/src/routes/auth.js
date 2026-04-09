@@ -7,7 +7,7 @@ const VendorProfile = require('../models/VendorProfile')
 const { protect } = require('../middleware/auth')
 
 const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' })
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '30m' })
 
 const sendToken = (user, statusCode, res) => {
   const token = signToken(user._id)

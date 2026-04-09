@@ -45,25 +45,42 @@ router.post('/', protect, authorize('buyer'), async (req, res) => {
 // POST /api/orders/:id/verify-payment  — verify Paystack payment
 router.post('/:id/verify-payment', protect, async (req, res) => {
   try {
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({ message: 'Paystack not configured. Contact admin.' })
+    }
+
     const { reference } = req.body
+    if (!reference) {
+      return res.status(400).json({ message: 'Payment reference is required' })
+    }
+
     const order = await Order.findOne({ _id: req.params.id, buyerId: req.user._id })
     if (!order) return res.status(404).json({ message: 'Order not found' })
     if (order.paymentStatus === 'paid') return res.json({ order, message: 'Already paid' })
 
     // Verify with Paystack
-    const { data } = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
-    )
+    let paystackData
+    try {
+      const { data } = await axios.get(
+        `https://api.paystack.co/transaction/verify/${reference}`,
+        { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
+      )
+      paystackData = data
+    } catch (paystackErr) {
+      console.error('Paystack verification error:', paystackErr.response?.data || paystackErr.message)
+      return res.status(400).json({ message: 'Failed to verify with Paystack. Invalid reference?' })
+    }
 
-    if (data.data.status !== 'success') {
-      return res.status(400).json({ message: 'Payment not successful' })
+    if (!paystackData.data || paystackData.data.status !== 'success') {
+      return res.status(400).json({ message: 'Payment was not successful on Paystack' })
     }
 
     // Verify amount matches (Paystack returns kobo)
-    const paidAmount = data.data.amount / 100
-    if (paidAmount < order.totalAmount) {
-      return res.status(400).json({ message: 'Payment amount mismatch' })
+    const paidAmount = paystackData.data.amount / 100
+    if (Math.abs(paidAmount - order.totalAmount) > 1) { // Allow 1 naira tolerance
+      return res.status(400).json({ 
+        message: `Payment amount mismatch. Expected ₦${order.totalAmount}, got ₦${paidAmount}` 
+      })
     }
 
     // Update order
@@ -81,7 +98,8 @@ router.post('/:id/verify-payment', protect, async (req, res) => {
 
     res.json({ order, message: 'Payment verified. Order is being processed.' })
   } catch (err) {
-    res.status(500).json({ message: err.message })
+    console.error('Payment verification error:', err.message)
+    res.status(500).json({ message: 'Payment verification failed. Please try again.' })
   }
 })
 
