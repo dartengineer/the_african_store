@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/authStore'
 import Layout from '@/components/layout/Layout'
 
@@ -10,13 +10,21 @@ interface ProtectedRouteProps {
   redirectTo?: string
 }
 
-export function withProtectedRoute<P>(
+export function withProtectedRoute<P extends object>(
   Component: React.ComponentType<P>,
   { allowedRoles, redirectTo = '/' }: ProtectedRouteProps
 ) {
   const ProtectedComponent = (props: P): JSX.Element | null => {
     const router = useRouter()
-    const { user, isInitialized } = useAuthStore()
+    const { user } = useAuthStore()
+
+    const [isInitialized, setIsInitialized] = useState(false)
+
+
+    useEffect(() => {
+      setIsInitialized(true)
+    }, [])
+
 
     useEffect(() => {
       if (!isInitialized) return
@@ -30,7 +38,7 @@ export function withProtectedRoute<P>(
         router.replace(redirectTo)
         return
       }
-    }, [user, isInitialized, router, allowedRoles, redirectTo])
+    }, [user, isInitialized, router])
 
     // 🔹 1. Still initializing
     if (!isInitialized) {
@@ -49,7 +57,9 @@ export function withProtectedRoute<P>(
     }
 
     // 🔹 3. Authorized
-    return <Component {...props} />
+
+    return <Component {...(props as P)} />
+
   }
 
   return ProtectedComponent
