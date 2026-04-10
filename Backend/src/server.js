@@ -18,7 +18,7 @@ app.use(helmet())
 // CORS configuration - use environment variables for flexibility
 const allowedOrigins = [
   'http://localhost:3000',
-  process.env.FRONTEND_URL || 'https://the-african-store.vercel.app'
+  process.env.CLIENT_URL || 'https://the-african-store.vercel.app'
 ]
 
 app.use(cors({
