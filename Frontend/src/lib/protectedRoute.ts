@@ -14,8 +14,7 @@ export function withProtectedRoute<P extends object>(
   Component: React.ComponentType<P>,
   { allowedRoles, redirectTo = '/' }: ProtectedRouteProps
 ) {
-  const ProtectedComponent = (props: P): JSX.Element | null => {
-    const router = useRouter()
+const ProtectedComponent = (props: P): JSX.Element | null | undefined => {    const router = useRouter()
     const { user } = useAuthStore()
 
     const [isInitialized, setIsInitialized] = useState(false)
