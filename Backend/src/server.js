@@ -23,7 +23,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function(origin, callback){
-    // allow requests with no origin like mobile apps, curl
     if(!origin) return callback(null, true)
     if(allowedOrigins.indexOf(origin) === -1){
       console.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`)
@@ -35,8 +34,11 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  maxAge: 86400, // 24 hours
+  maxAge: 86400,
 }))
+
+// ✅ ADD THIS LINE — handles browser preflight OPTIONS requests
+app.options('*', cors())
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
 // Rate limiting
